@@ -16,12 +16,28 @@ public class Board {
         return board;
     }
 
-    public void setPieceOnTheBoard(Piece piece, int x,int y) {
-        board[x][y] = piece;
+    public void setPieceOnTheStartPosition(Piece piece, String position) {
+        Coordinates coordinates = Parser.convertFistPartOfMove(position);
+        board[coordinates.getX()][coordinates.getY()] = piece;
     }
 
+    public Piece getPieceFromBoard(String position) {
+        Coordinates coordinates = Parser.convertFistPartOfMove(position);
+        return board[coordinates.getX()][coordinates.getY()];
+    }
     public Piece getPieceFromBoard(int x,int y) {
         return board[x][y];
+    }
+
+    public void deletePieceFromBoard(String position) {
+        Coordinates coordinates = Parser.convertFistPartOfMove(position);
+        board[coordinates.getX()][coordinates.getY()] = null;
+    }
+
+    public void setPieceOnTheNextSpot(String move) {
+        Coordinates[] coordinates = Parser.parseInput(move);
+        board[coordinates[1].getX()][coordinates[1].getY()] = getPieceFromBoard(move);
+        deletePieceFromBoard(move);
     }
 }
 
