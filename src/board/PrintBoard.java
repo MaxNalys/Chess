@@ -21,6 +21,14 @@ public class PrintBoard {
         pieceIdentifiers.put(PieceIdentifier.ROOK, "♖");
     }
 
+    public static void printBoard(Board board, boolean isWhite) {
+        if (isWhite) {
+            printWhiteBoard(board);
+        } else {
+            printBlackBoard(board);
+        }
+    }
+
     public static void printWhiteBoard(Board board) {
         for (int i = 0; i < Board.BOARD_SIZE; i++) {
             for (int j = 0; j < Board.BOARD_SIZE; j++) {
@@ -46,7 +54,7 @@ public class PrintBoard {
         for (int i = Board.BOARD_SIZE - 1; i >= 0; i--) {
             for (int j = Board.BOARD_SIZE - 1; j >= 0; j--) {
                 if (j == 7) {
-                    System.out.print(WHITE_BOLD_BRIGHT + (i+1));
+                    System.out.print(WHITE_BOLD_BRIGHT + (Math.abs(i-Board.BOARD_SIZE)));
                 }
                 if (board.getBoard()[j][i] == null) {
                     System.out.print(MAGENTA + "\t☐");

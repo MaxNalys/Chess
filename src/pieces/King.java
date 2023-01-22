@@ -1,7 +1,7 @@
 package pieces;
 
 public class King extends Piece {
-    private boolean isMoved;
+    public boolean isMoved;
 
     public King(boolean isWhite) {
         super(isWhite, PieceIdentifier.KING);

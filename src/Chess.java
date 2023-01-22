@@ -1,22 +1,27 @@
 import board.Board;
 import board.PrintBoard;
 import pieces.*;
+import utils.ColorGameChange;
 import utils.Coordinates;
 import utils.Parser;
+
 import java.util.LinkedList;
 import java.util.Scanner;
 
 public class Chess {
+    private ColorGameChange colorGameChange;
     private Board board;
     private LinkedList<Piece> blackPieces;
     private LinkedList<Piece> whitePieces;
 
     public Chess() {
+        this.colorGameChange = new ColorGameChange();
         this.board = new Board();
         this.blackPieces = new LinkedList<>();
         this.whitePieces = new LinkedList<>();
         setUp();
     }
+
     private void pieceColorHelper(Piece piece, boolean isWhite) {
         if (isWhite) {
             whitePieces.add(piece);
@@ -98,22 +103,28 @@ public class Chess {
 
     public void startGame() {
         Scanner scanner = new Scanner(System.in);
-        PrintBoard.printWhiteBoard((board));
-        while (true) {
+        boolean continueGame = true;
+        while (continueGame) {
+            PrintBoard.printBoard(board, colorGameChange.isWhite());
+            System.out.println();
             String move = scanner.next();
             moveTo(move);
-            PrintBoard.printWhiteBoard((board));
+            colorGameChange.gameChangeColour();
+            System.out.println();
         }
     }
 
     public void moveTo(String move) {
-        if(canMove(move)) {
+        if (canMove(move)) {
             board.setPieceOnTheNextSpot(move);
         }
     }
 
     public boolean canMove(String move) {
-        Enum pieceIdentifier = board.getPieceFromBoard(move).getPieceIdentifier();
+        Enum pieceIdentifier = board.getPieceFromStartPosition(move).getPieceIdentifier();
+        if (!checkBasicRules(move)) {
+            return false;
+        }
         if (PieceIdentifier.PAWN.equals(pieceIdentifier)) {
             return isPawnMovement(move);
         } else if (PieceIdentifier.BISHOP.equals(pieceIdentifier)) {
@@ -130,9 +141,33 @@ public class Chess {
         return false;
     }
 
+    public boolean checkBasicRules(String move) {
+        if (isWithinBoundsMove(move)) {
+            if (isEmptyPosition(move)) {
+                return true;
+            } else return !isYourColor(move);
+        }
+        return false;
+    }
+
+    public boolean isWithinBoundsMove(String move) {
+        Coordinates[] coordinates = Parser.parseInput(move);
+        return coordinates[1].getX() < Board.BOARD_SIZE && coordinates[1].getX() >= 0 && coordinates[1].getY() < Board.BOARD_SIZE && coordinates[1].getY() >= 0;
+    }
+
+    public boolean isEmptyPosition(String move) {
+        Coordinates[] coordinates = Parser.parseInput(move);
+        return board.getPieceFromBoard(coordinates[1].getX(), coordinates[1].getY()) == null;
+    }
+
+    public boolean isYourColor(String move) {
+        Coordinates[] coordinates = Parser.parseInput(move);
+        return board.getPieceFromStartPosition(move).isWhite() == board.getPieceFromBoard(coordinates[1].getX(), coordinates[1].getY()).isWhite();
+    }
+
     public boolean isPawnMovement(String move) {
         Coordinates[] coordinates = Parser.parseInput(move);
-        Pawn pawn = (Pawn) board.getPieceFromBoard(move);
+        Pawn pawn = (Pawn) board.getPieceFromStartPosition(move);
         int oneSquare;
         int twoSquare;
         if (pawn.isWhite()) {
@@ -142,18 +177,29 @@ public class Chess {
             oneSquare = 1;
             twoSquare = 2;
         }
+        if (Math.abs(coordinates[0].getX() - coordinates[1].getX()) == 1) {
+            pawn.setHasMoved(true);
+            return true;
+        }
         if (coordinates[1].getY() - coordinates[0].getY() == oneSquare) {
             if (coordinates[1].getX() == coordinates[0].getX()) {
-                pawn.setHasMoved(true);
-                return true;
-            } else if (Math.abs(coordinates[0].getX() - coordinates[1].getX()) == 1) {
-                pawn.setHasMoved(true);
-                return true;
+                if (board.getPieceFromBoard(coordinates[1].getX(), coordinates[1].getY()) == null) {
+                    pawn.setHasMoved(true);
+                    return true;
+                }
             }
         } else if (!pawn.isHasMoved() && coordinates[1].getY() - coordinates[0].getY() == twoSquare) {
             if (coordinates[0].getX() == coordinates[1].getX()) {
-                pawn.setHasMoved(true);
-                return true;
+                int value;
+                if (board.getPieceFromStartPosition(move).isWhite()) {
+                    value = -1;
+                } else {
+                    value = 1;
+                }
+                if (board.getBoard()[coordinates[0].getX()][coordinates[0].getY() + value] == null) {
+                    pawn.setHasMoved(true);
+                    return true;
+                }
             }
         }
         return false;
@@ -200,64 +246,67 @@ public class Chess {
     }
 
     public boolean isDiagonalMovement(String move) {
-
         Coordinates[] coordinates = Parser.parseInput(move);
-        int xLarge;
-        int xSmall;
-        int yCoordinate;
-        //x0>x1&&y0<y1 --1-DONE
+        int xTotal = Math.abs(coordinates[1].getX() - coordinates[0].getX());
+        int yTotal = Math.abs(coordinates[1].getY() - coordinates[0].getY());
+        if (xTotal != yTotal) {
+            return false;
+        }
+
+        int startX;
+        int finalX;
+        int yPosition;
+        //y++ x--
         if (coordinates[0].getX() > coordinates[1].getX() && coordinates[0].getY() < coordinates[1].getY()) {
-            xLarge = coordinates[0].getX();
-            xSmall = coordinates[1].getX();
-            yCoordinate = coordinates[0].getY();
-            xLarge--;
-            yCoordinate++;
-            for (; xSmall < xLarge; yCoordinate++, xLarge--) {
-                if (board.getPieceFromBoard(xLarge, yCoordinate) != null) {
+            startX = coordinates[0].getX();
+            finalX = coordinates[1].getX();
+            yPosition = coordinates[0].getY();
+            yPosition++;
+            startX--;
+            for (; startX > finalX; yPosition++, startX--) {
+                if (board.getPieceFromBoard(startX, yPosition) != null) {
                     return false;
                 }
             }
             return true;
-            //x0<x1&&y0<y1 --2-????
-        } else if (coordinates[0].getX() < coordinates[1].getX() && coordinates[0].getY() < coordinates[1].getY()) {
-            yCoordinate = coordinates[0].getY();
-            xSmall = coordinates[0].getX();
-            xLarge = coordinates[1].getX();
-            xSmall++;
-            yCoordinate++;
-            for (; xSmall < xLarge; xSmall++, yCoordinate++) {
-                if (board.getPieceFromBoard(xSmall, yCoordinate) != null) {
-                    return false;
-                }
-            }
-            //x0>x1&&y0>y1 --3--DONE
-        } else if (coordinates[0].getX() > coordinates[1].getX() && coordinates[0].getY() > coordinates[1].getY()) {
-            xLarge = coordinates[0].getX();
-            xSmall = coordinates[1].getX();
-            yCoordinate = coordinates[0].getY();
-            xLarge--;
-            yCoordinate--;
-            for (; xSmall < xLarge; yCoordinate--, xLarge--) {
-                if (board.getPieceFromBoard(xLarge, yCoordinate) != null) {
-                    return false;
-                }
-            }
-            return true;
-            //x0<x1&&y0>y1 --4-DONE
+            //x++ y--
         } else if (coordinates[0].getX() < coordinates[1].getX() && coordinates[0].getY() > coordinates[1].getY()) {
-            xLarge = coordinates[1].getX();
-            xSmall = coordinates[0].getX();
-            yCoordinate = coordinates[1].getY();
-            yCoordinate--;
-            xSmall++;
-            for (; xSmall < xLarge; xSmall++, yCoordinate--) {
-                if (board.getPieceFromBoard(xSmall, yCoordinate) != null) {
+            startX = coordinates[0].getX();
+            finalX = coordinates[1].getX();
+            yPosition = coordinates[0].getY();
+            yPosition--;
+            startX++;
+            for (; startX < finalX; startX++, yPosition--) {
+                if (board.getPieceFromBoard(startX, yPosition) != null) {
+                    return false;
+                }
+            }
+            return true;
+        } else if (coordinates[0].getX() < coordinates[1].getX() && coordinates[0].getY() < coordinates[1].getY()) {
+            startX = coordinates[0].getX();
+            finalX = coordinates[1].getX();
+            yPosition = coordinates[0].getY();
+            yPosition++;
+            startX++;
+            for (; startX < finalX; startX++, yPosition++) {
+                if (board.getPieceFromBoard(startX, yPosition) != null) {
+                    return false;
+                }
+            }
+            return true;
+        } else if (coordinates[0].getX() > coordinates[1].getX() && coordinates[0].getY() > coordinates[1].getY()) {
+            startX = coordinates[0].getX();
+            finalX = coordinates[1].getX();
+            yPosition = coordinates[0].getY();
+            yPosition--;
+            startX--;
+            for (; startX > finalX; startX--, yPosition--) {
+                if (board.getPieceFromBoard(startX, yPosition) != null) {
                     return false;
                 }
             }
             return true;
         }
-
         return false;
     }
 
@@ -277,4 +326,6 @@ public class Chess {
         }
         return false;
     }
+
+   
 }

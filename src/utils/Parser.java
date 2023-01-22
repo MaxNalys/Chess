@@ -49,4 +49,6 @@ public class Parser {
         int y = algebraicNumericChessNotationMap.get(move.charAt(4));
         return new Coordinates(x, y);
     }
+
 }
+

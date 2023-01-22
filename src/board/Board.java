@@ -21,10 +21,7 @@ public class Board {
         board[coordinates.getX()][coordinates.getY()] = piece;
     }
 
-    public Piece getPieceFromBoard(String position) {
-        Coordinates coordinates = Parser.convertFistPartOfMove(position);
-        return board[coordinates.getX()][coordinates.getY()];
-    }
+
     public Piece getPieceFromBoard(int x,int y) {
         return board[x][y];
     }
@@ -39,6 +36,17 @@ public class Board {
         board[coordinates[1].getX()][coordinates[1].getY()] = getPieceFromBoard(move);
         deletePieceFromBoard(move);
     }
+    public Piece getPieceFromStartPosition(String move) {
+        Coordinates[] coordinates = Parser.parseInput(move);
+        return board[coordinates[0].getX()][coordinates[0].getY()];
+    }
+
+    public Piece getPieceFromNextPosition(String move) {
+        Coordinates[] coordinates = Parser.parseInput(move);
+        return board[coordinates[1].getX()][coordinates[1].getY()];
+    }
+
+
 }
 
 
